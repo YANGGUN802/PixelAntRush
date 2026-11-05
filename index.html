@@ -10,7 +10,7 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="🕹️Pixel Ant Rush🎮 | 무료 아케이드 게임">
 <meta property="og:description" content="개미가 되어 픽셀 블록을 모두 제거하라! [by JUNE]">
-<link rel="stylesheet" href="./🕹️Pixel Ant Rush🎮 | 무료 아케이드 게임_files/css2">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&family=Do+Hyeon&family=Gowun+Dodum&display=swap">
 
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6cfae;--bg2:#fbe3cc;--tray:#ead9cb;--card:#fff;--tx:#4a3a52;--mu:#8a768f;--ln:#e9cdb4}
@@ -45,6 +45,8 @@ h1{font:400 clamp(20px,3.8vh,26px)/1 "Jua",sans-serif;margin:0 auto 0 0;text-sha
 .lv{border:0;border-radius:12px;padding:8px 0;background:var(--bg2);color:var(--tx);font:400 15px "Jua",sans-serif;box-shadow:0 3px 0 var(--ln);cursor:pointer}
 .lv.ok{background:#8be0b0;color:#25513a}.lv.now{background:#5aa9ff;color:#fff}.lv:disabled{opacity:.4;cursor:default}
 :focus-visible{outline:3px solid #5aa9ff;outline-offset:2px}
+.top h1,.top .btn{font-family:"Do Hyeon","Jua",sans-serif}
+.hint{font-family:"Gowun Dodum","Noto Sans KR",sans-serif}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -178,7 +180,7 @@ $("hn").textContent=`아래의 블록을 눌러 위 칸에 올리면 같은 색 
 const maxCSByW = Math.floor(340 / (S.W + 2));
 const maxCSByH = Math.floor((window.innerHeight * 0.44) / (S.H + 4));
 CS = Math.min(26, Math.max(10, Math.min(maxCSByW, maxCSByH)));
-const w=(S.W+2)*CS,h=(S.H+4)*CS;$("cv").width=w*2;$("cv").height=h*2;cx.setTransform(2,0,0,2,0,0);hole=[((S.W+2>>1)+.5)*CS,(S.H+3.5)*CS];
+const w=(S.W+2)*CS,h=(S.H+4)*CS;$("cv").width=w*2;$("cv").height=h*2;cx.setTransform(2,0,0,2,0,0);hole=[(S.W+2)/2*CS,(S.H+3.5)*CS];
 $("lt").textContent=n?"Lv."+n:"📷 내 사진";$("ov").hidden=true;$("lm").hidden=true;ui()}
 const tc=c=>lum(S.P[c])>.72?"#4a3a52":"#fff";
 
