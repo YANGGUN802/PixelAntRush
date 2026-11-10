@@ -118,7 +118,7 @@ h1{font:400 clamp(20px,3.8vh,26px)/1 "Jua",sans-serif;margin:0 auto 0 0;text-sha
 const $=i=>document.getElementById(i),NL=100,LVC=[[0,5],[0,4],[0,4],[0,3],[0,3],[0,3],[0,3],[0,3],[3,3],[2,3],[9,3],[2,3],[7,3],[0,3],[1,3],[3,3],[8,3],[2,3],[2,3],[5,3],[7,3],[2,3],[3,3],[2,3],[7,3],[8,3],[1,3],[0,3],[0,3],[4,3],[4,3],[0,3],[1,3],[0,3],[1,3],[0,3],[9,3],[4,3],[5,3],[3,3],[4,3],[0,3],[1,3],[7,3],[5,3],[3,3],[4,3],[6,3],[5,3],[0,3]].concat(Array.from({length:50},()=>[0,3]));
 const THEME_PALETTES=[["#8fe3ff","#ffeaa8","#ffcf6e","#ff7a8a","#4a8cff","#34b38a","#ff9f43","#ffffff","#6b4a43"],["#1a1c2c","#5d275d","#b13e53","#ef7d57","#ffcd75","#a7f070","#38b764","#257179","#29366f","#3b5dc9","#41a6f6","#73eff7"],["#3d251e","#854c30","#d98324","#efb351","#f7e3af","#ffffff","#e3828d","#423938","#68825b","#a4c28c"],["#1e293b","#0f766e","#14b8a6","#2dd4bf","#fef08a","#f97316","#dc2626","#7c3aed","#38bdf8","#ffffff"],["#0a192f","#1e3a8a","#3b82f6","#60a5fa","#f59e0b","#fef08a","#15803d","#475569","#f8fafc"],["#18181b","#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#a855f7","#ec4899","#ffffff"]];
 const rng=a=>()=>{a+=0x6D2B79F5;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
-const lp=n=>({W:Math.min(24,10+Math.floor((n-1)*14/49)),H:Math.min(20,8+Math.floor((n-1)*12/49)),m:Math.min(3,4+Math.floor((n-1)/6))});
+const lp=n=>({W:Math.min(24,10+Math.floor((n-1)*14/49)),H:Math.min(20,8+Math.floor((n-1)*12/49)),m:n<=10?4:n<=30?5:n<=40?6:n<=50?7:n<=75?8:9});
 
 function gen(n){
   const{W,H,m}=lp(n),r=rng(n*7919+13),themeIdx=(n-1)%THEME_PALETTES.length,P=THEME_PALETTES[themeIdx].slice(0,m);
@@ -134,12 +134,64 @@ function gen(n){
   const nf=n<6?0:n<20?1:n<35?2:3;for(let k=0;k<nf;k++){const col=c(8-k),x0=k,y0=k,x1=W-1-k,y1=H-1-k;if(x1-x0<3||y1-y0<3)break;for(let x=x0;x<=x1;x++){g[y0][x]=col;g[y1][x]=col}for(let y=y0;y<=y1;y++){g[y][x0]=col;g[y][x1]=col}}
   return{W,H,g,P}
 }
-function build(n,a,cu){const s=n?gen(n):cu,G=s.g.map(r=>r.slice()),cnt=s.P.map(()=>0);G.flat().forEach(c=>cnt[c]++);
-const r=rng(n*131+a*17+5),lo=Math.min(28,8+Math.floor(n*.4)),cq=[[],[],[],[]];
-if(n===0){const B=[];cnt.forEach((q,c)=>{while(q>0){let k=Math.min(q,lo+Math.floor(r()*12));if(q-k<lo)k=q;B.push({c,n:k});q-=k}});for(let k=B.length-1;k>0;k--){const j=Math.floor(r()*(k+1));[B[k],B[j]]=[B[j],B[k]]}B.forEach((b,k)=>cq[k%4].push(b));}
-else{// 각 색상의 블록을 전용 대기열에 배치해, 필요한 색을 언제든 선택할 수 있도록 보장
-cnt.forEach((q,c)=>{while(q>0){let k=Math.min(q,lo+Math.floor(r()*12));if(q-k<lo)k=q;cq[c].push({c,n:k});q-=k}})}
-return{G,W:s.W,H:s.H,P:s.P,cq,left:G.flat().length,RS:new Set}}
+function build(n,a,cu){
+  const s=n?gen(n):cu,G=s.g.map(r=>r.slice()),cnt=s.P.map(()=>0);
+  G.flat().forEach(c=>{if(c>=0)cnt[c]++});
+  const r=rng(n*131+a*17+5),lo=Math.min(28,8+Math.floor(n*.4)),cq=[[],[],[],[]];
+  if(n===0){
+    const B=[];
+    cnt.forEach((q,c)=>{while(q>0){let k=Math.min(q,lo+Math.floor(r()*12));if(q-k<lo)k=q;B.push({c,n:k});q-=k}});
+    for(let k=B.length-1;k>0;k--){const j=Math.floor(r()*(k+1));[B[k],B[j]]=[B[j],B[k]]}
+    B.forEach((b,k)=>cq[k%4].push(b));
+  }else{
+    // 먼저 실제 이동 규칙으로 보드를 끝까지 제거하는 색상 순서를 계산한다.
+    // 같은 색의 연속 제거량을 블록으로 묶고, 4개 대기열에 순서대로 분산한다.
+    const sim={G:G.map(row=>row.slice()),W:s.W,H:s.H,RS:new Set()},plan=[];
+    let left=sim.W*sim.H,guard=0;
+    while(left>0&&guard++<sim.W*sim.H+1){
+      const choices=[];
+      for(let c=0;c<s.P.length;c++){
+        const t=reach(sim,c);
+        if(t)choices.push({c,t});
+      }
+      if(!choices.length)break;
+      // 접근 가능한 색 중 남은 수가 많은 색을 우선하되, 동률은 레벨 시드로 결정
+      let best=choices[0],bestScore=-Infinity;
+      for(const item of choices){
+        const remaining=cnt[item.c];
+        const score=remaining+(r()*.35);
+        if(score>bestScore){bestScore=score;best=item}
+      }
+      let t=best.t;
+      while(t&&left>0){
+        sim.G[t.y][t.x]=-1;
+        sim.RS.delete(t.y*sim.W+t.x);
+        cnt[best.c]--;
+        plan.push(best.c);left--;
+        t=reach(sim,best.c);
+      }
+    }
+    // 안전장치: 제거 순서 계산이 완성되지 않으면 레벨 보드를 보존한 채 색상별 순서를 생성
+    if(left>0){
+      plan.length=0;
+      const rest=s.P.map(()=>0);G.flat().forEach(c=>{if(c>=0)rest[c]++});
+      while(rest.some(v=>v>0)){for(let c=0;c<rest.length;c++)if(rest[c]>0){plan.push(c);rest[c]--}}
+    }
+    let i=0;
+    while(i<plan.length){
+      const c=plan[i];let run=1;
+      while(i+run<plan.length&&plan[i+run]===c)run++;
+      let remaining=run;
+      while(remaining>0){
+        const k=Math.min(remaining,lo+Math.floor(r()*12));
+        cq[(cq.reduce((v,q)=>v+q.length,0))%4].push({c,n:k});
+        remaining-=k;
+      }
+      i+=run;
+    }
+  }
+  return{G,W:s.W,H:s.H,P:s.P,cq,left:G.flat().filter(c=>c>=0).length,RS:new Set}
+}
 
 function reach(S,c){
   const{G,W,H}=S, EW=W+2, EH=H+4;
